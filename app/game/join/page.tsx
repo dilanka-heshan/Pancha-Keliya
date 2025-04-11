@@ -41,7 +41,7 @@ export default function JoinGame() {
       const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select("*")
-        .eq("room_id", data.id)
+        .eq("room_id", data.id as string)
 
       if (playersError) {
         setError("Error checking room capacity")

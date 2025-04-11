@@ -1,6 +1,6 @@
 import { Server } from "socket.io"
 import { type NextApiResponseWithSocket, type SocketRequest, GameEvents } from "@/lib/socket"
-import { supabaseServer } from "@/lib/supabase"
+import { supabaseServer } from "@/lib/supabaseServer"
 
 export default function SocketHandler(req: SocketRequest, res: NextApiResponseWithSocket) {
   // Check if socket.io server is already running

@@ -1,11 +1,11 @@
 import type { PiecePosition, GameState } from "./supabase"
 
 // Board constants
-export const BOARD_SIZE = 28 // Total number of squares on the board
-export const SAFE_SQUARES = [0, 7, 14, 21] // Squares where pieces cannot be knocked out
+export const BOARD_SIZE = 80 // Total number of squares on the board
+export const SAFE_SQUARES = [0,1,2,3,4,5,6, 7, 13, 19,25,31,37,43,49,55,61,67,68,69,70,71,72,73,74,75,76,77,78,79,80] // Squares where pieces cannot be knocked out
 export const PLAYER1_START = 0 // Starting position for player 1
 export const PLAYER2_START = 14 // Starting position for player 2
-export const HOME_POSITION = 28 // Position when a piece completes the board
+export const HOME_POSITION = 80 // Position when a piece completes the board
 
 // Initialize a new game state
 export function initializeGameState(roomId: string): Omit<GameState, "id" | "created_at" | "updated_at"> {

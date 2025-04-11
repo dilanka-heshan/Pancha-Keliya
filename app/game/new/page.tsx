@@ -41,7 +41,7 @@ export default function CreateGame() {
           },
         ])
         .select()
-        .single()
+        .single<{ id: string; room_code: string; status: string }>()
 
       if (roomError || !roomData) {
         throw new Error("Failed to create game room")

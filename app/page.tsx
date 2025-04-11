@@ -16,7 +16,7 @@ export default function Home() {
           <div className="bg-white p-8 rounded-xl shadow-lg">
             <div className="mb-8">
               <img
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-38MU84yRAj4ZAbgDkZwXkunytp03hk.png"
+                src="https://res.cloudinary.com/dyaleu8gi/image/upload/v1744316875/ChatGPT_Image_Apr_11_2025_01_57_25_AM_ks2lvt.png"
                 alt="Pancha Keliya Game Board"
                 className="mx-auto rounded-lg max-w-full h-auto"
               />

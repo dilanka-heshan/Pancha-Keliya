@@ -8,7 +8,6 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Pancha Keliya - Traditional Sri Lankan Board Game",
   description: "Play the traditional Sri Lankan board game Pancha Keliya online with friends",
-    generator: 'v0.dev'
 }
 
 export default function RootLayout({

@@ -35,7 +35,7 @@ export default function Board({ gameState, currentPlayer, isPlayerTurn, onPieceS
     // If position is a player zone
     if (position === "player1" || position === "player2") {
       const playerNumber = position === "player1" ? 1 : 2
-      const playerName = position === "player1" ? "Harshani" : "Champika"
+      const playerName = position === "player1" ? "Player 1" : "Player 2"
       const pieces = playerNumber === 1 ? player1Pieces : player2Pieces
 
       // Filter pieces that are not on the board yet

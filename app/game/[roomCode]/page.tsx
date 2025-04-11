@@ -13,7 +13,8 @@ import { GameEvents } from "@/lib/socket"
 import GameOver from "@/components/game-over"
 
 export default function GameRoom() {
-  const { roomCode } = useParams()
+  const params = useParams()
+  const roomCode = params?.roomCode as string
   const [socket, setSocket] = useState<Socket | null>(null)
   const [gameState, setGameState] = useState<GameState | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -29,7 +30,7 @@ export default function GameRoom() {
   // Initialize socket connection
   useEffect(() => {
     const newSocket = io({
-      path: "/api/socket",
+      path: "/api/socket", // Ensure this matches the server-side path
     })
 
     newSocket.on("connect", () => {
@@ -88,7 +89,7 @@ export default function GameRoom() {
         const { data: stateData, error: stateError } = await supabase
           .from("game_states")
           .select("*")
-          .eq("room_id", roomData.id)
+          .eq("room_id", roomData.id as string)
           .single()
 
         if (stateError || !stateData) {
@@ -97,7 +98,7 @@ export default function GameRoom() {
           return
         }
 
-        setGameState(stateData)
+        setGameState(stateData as GameState)
 
         // Get player number from localStorage
         const storedPlayerNumber = localStorage.getItem("playerNumber")
@@ -106,7 +107,7 @@ export default function GameRoom() {
         }
 
         // Check if game has started (both players joined)
-        const { data: playersData } = await supabase.from("players").select("*").eq("room_id", roomData.id)
+        const { data: playersData } = await supabase.from("players").select("*").eq("room_id", roomData.id as string)
 
         if (playersData && playersData.length === 2) {
           setGameStarted(true)
