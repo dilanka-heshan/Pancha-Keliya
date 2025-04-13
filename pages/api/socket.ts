@@ -59,12 +59,11 @@ export default function SocketHandler(req: SocketRequest, res: NextApiResponseWi
         socket.emit(GameEvents.ERROR, "Failed to join room")
       }
     })
-
-    // Handle game state updates
-    socket.on(GameEvents.GAME_STATE_UPDATE, ({ roomCode, gameState }) => {
-      // Broadcast to all clients in the room except sender
-      socket.to(roomCode).emit(GameEvents.GAME_STATE_UPDATE, gameState)
+    socket.on(GameEvents.GAME_STATE_UPDATE, ({ roomCode, gameState }, ack) => {
+      io.to(roomCode).emit(GameEvents.GAME_STATE_UPDATE, gameState)
+      if (ack) ack({ status: 'ok' })
     })
+    
 
     // Handle disconnection
     socket.on("disconnect", () => {

@@ -211,7 +211,7 @@ export default function GameRoom() {
     const newPosition = getNextPosition(piece.position, lastRoll, playerNumber)
 
     // Check if piece has completed the circuit
-    const completed = newPosition === 28
+    const completed =( newPosition === 79  && playerNumber === 1)|| (newPosition === 157 && playerNumber === 2)
 
     // Update piece position
     const updatedPieces = playerPieces.map((p) => (p.id === pieceId ? { ...p, position: newPosition, completed } : p))
@@ -255,10 +255,10 @@ export default function GameRoom() {
   const updateGameState = async (newState: GameState) => {
     try {
       const { error } = await supabase.from("game_states").update(newState).eq("id", newState.id)
+      if (error) throw error
 
-      if (error) {
-        throw error
-      }
+      // Update local state to trigger re-render
+      setGameState(newState)
 
       // Emit socket event for real-time updates
       if (socket) {

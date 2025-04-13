@@ -24,7 +24,10 @@ export default function Board({
   const [boardWidth, setBoardWidth] = useState(0)
   const [boardHeight, setBoardHeight] = useState(0)
   
-
+  useEffect(() => {
+    // Trigger a re-render when the gameState changes
+    setBoardWidth(prev => prev); // Dummy state update to force re-render
+  }, [gameState]);
 
   const cellDefinitions = [
     // Bottom row (left to right)
@@ -61,7 +64,7 @@ export default function Board({
     { id: 15, altId: 135, x: 3, y: 6, isSafe: false },
     { id: 14, altId: 136, x: 4, y: 6, isSafe: false },
     { id: 13, altId: 137, x: 5, y: 6, isSafe: false },
-    { id: 12, altId: 90, x: 6, y: 6, isSafe: true },//
+    { id: 12, altIds: [90, 60, 138], x: 6, y: 6, isSafe: true },
     { id: 59, altId: 91, x: 7, y: 6, isSafe: false },
     { id: 58, altId: 92, x: 8, y: 6, isSafe: false },
     { id: 57, altId: 93, x: 9, y: 6, isSafe: false },
@@ -166,25 +169,29 @@ export default function Board({
   }, [])
 
   const getCellPosition = (x: number, y: number) => {
-    const cellSize = boardWidth / 20
+    const cellSize = boardWidth / 24; // Increase cell size to reduce free space
+    const offsetX = (boardWidth - cellSize * 30) / 2; // Center horizontally
+    const offsetY = (boardHeight - cellSize * 20) / 2; // Center vertically
     return {
-      left: x * cellSize,
-      top: y * cellSize,
+      left: offsetX + (20 - x) * cellSize, // Adjust for centering and invert x
+      top: offsetY + (20 - y) * cellSize, // Adjust for centering and invert y
       width: cellSize,
       height: cellSize,
-    }
-  }
+    };
+  };
 
   const getTokenPosition = (cellId: number) => {
-    const cell = cellDefinitions.find((c) => c.id === cellId || c.altId === cellId)
-    if (!cell) return null
-
-    const position = getCellPosition(cell.x, cell.y)
+    const cell = cellDefinitions.find(
+      (c) => c.id === cellId || c.altId === cellId || (c.altIds && c.altIds.includes(cellId))
+    );
+    if (!cell) return null;
+  
+    const position = getCellPosition(cell.x, cell.y);
     return {
       left: position.left + position.width / 2,
       top: position.top + position.height / 2,
-    }
-  }
+    };
+  };
   
   // Add the missing onTokenClick function
   const onTokenClick = (tokenId: number) => {
@@ -219,10 +226,6 @@ export default function Board({
                 height: position.height,
               }}
             >
-              <div className="absolute top-1 left-1 text-[8px]">
-                {cell.id}
-                {cell.altId && <span className="block">{`=${cell.altId}`}</span>}
-              </div>
             </div>
           )
         })}
@@ -236,24 +239,25 @@ export default function Board({
             if (!position) return null;
             
             return (
-              <div
-                key={`p1-${piece.id}`}
-                className="absolute transform -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  left: position.left,
-                  top: position.top,
-                  zIndex: 10,
-                }}
-              >
-                <Token
-                  pieceId={piece.id}
-                  playerNumber={1}
-                  position={piece.position}
-                  isSelectable={isPlayerTurn && currentPlayer === 1 && availableMoves.includes(piece.id)}
-                  onClick={() => onTokenClick(piece.id)}
-                  previousPosition={piece.previous_position}
-                />
-              </div>
+                  <div
+                  key={`p1-${piece.id}-${piece.position}`}
+                  className="absolute transform -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    left: position.left,
+                    top: position.top,
+                    zIndex: 10,
+                    transition: 'all 0.3s ease-in-out' // Add smooth transition
+                  }}
+                  >
+                  <Token
+                    pieceId={piece.id}
+                    playerNumber={1}
+                    position={piece.position}
+                    isSelectable={isPlayerTurn && currentPlayer === 1 && availableMoves.includes(piece.id)}
+                    onClick={() => onTokenClick(piece.id)}
+                    previousPosition={piece.previous_position}
+                  />
+                  </div>
             );
           })}
           
@@ -272,6 +276,7 @@ export default function Board({
                   left: position.left,
                   top: position.top,
                   zIndex: 10,
+
                 }}
               >
                 <Token
