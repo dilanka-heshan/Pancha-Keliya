@@ -24,7 +24,7 @@ export default function Board({
   const [boardWidth, setBoardWidth] = useState(0)
   const [boardHeight, setBoardHeight] = useState(0)
   
-  useEffect(() => {
+useEffect(() => {
     // Trigger a re-render when the gameState changes
     setBoardWidth(prev => prev); // Dummy state update to force re-render
   }, [gameState]);
@@ -108,7 +108,7 @@ export default function Board({
     { id: 76, altId: null, x: 3.1, y: 15.2, isSafe: false },
     { id: 75, altId: null, x: 2.5, y: 14.4, isSafe: false },
     { id: 74, altId: null, x: 1.9, y: 13.6, isSafe: false },
-    { id: 73, altId: null, x: 1.3, y: 12.8, isSafe: false },
+    { id: 73, altId: null, x: 1.3, y: 12.8, isSafe: false }, 
 
 
 
@@ -169,29 +169,29 @@ export default function Board({
   }, [])
 
   const getCellPosition = (x: number, y: number) => {
-    const cellSize = boardWidth / 24; // Increase cell size to reduce free space
-    const offsetX = (boardWidth - cellSize * 30) / 2; // Center horizontally
-    const offsetY = (boardHeight - cellSize * 20) / 2; // Center vertically
+    const cellSize = boardWidth / 21;
     return {
-      left: offsetX + (20 - x) * cellSize, // Adjust for centering and invert x
-      top: offsetY + (20 - y) * cellSize, // Adjust for centering and invert y
+      left: (16 - x) * cellSize, // Flip horizontally
+      top: (20 - y) * cellSize, // Flip vertically
       width: cellSize,
       height: cellSize,
     };
   };
 
   const getTokenPosition = (cellId: number) => {
-    const cell = cellDefinitions.find(
-      (c) => c.id === cellId || c.altId === cellId || (c.altIds && c.altIds.includes(cellId))
-    );
-    if (!cell) return null;
-  
-    const position = getCellPosition(cell.x, cell.y);
+    const cell = cellDefinitions.find((c) => 
+      c.id === cellId || 
+      c.altId === cellId || 
+      (c.altIds && c.altIds.includes(cellId))
+    )
+    if (!cell) return null
+
+    const position = getCellPosition(cell.x, cell.y)
     return {
       left: position.left + position.width / 2,
       top: position.top + position.height / 2,
-    };
-  };
+    }
+  }
   
   // Add the missing onTokenClick function
   const onTokenClick = (tokenId: number) => {
@@ -226,6 +226,10 @@ export default function Board({
                 height: position.height,
               }}
             >
+              {/* <div className="absolute top-1 left-1 text-[8px]">
+                {cell.id}
+                {cell.altId && <span className="block">{`=${cell.altId}`}</span>}
+              </div> */}
             </div>
           )
         })}
@@ -276,8 +280,7 @@ export default function Board({
                   left: position.left,
                   top: position.top,
                   zIndex: 10,
-
-                }}
+                 }}
               >
                 <Token
                   pieceId={piece.id}

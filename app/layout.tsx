@@ -2,12 +2,13 @@ import type React from "react"
 import "./globals.css"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { AuthProvider } from "@/components/auth-provider"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Pancha Keliya - Traditional Sri Lankan Board Game",
-  description: "Play the traditional Sri Lankan board game Pancha Keliya online with friends",
+  title: "Pancha Keliya",
+  description: "A traditional Sri Lankan board game",
 }
 
 export default function RootLayout({
@@ -17,10 +18,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 }
-
-
-import './globals.css'

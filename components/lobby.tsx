@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Container } from "@/components/ui/container"
 import { getSupabase, type User } from "@/lib/supabase"
+import Link from "next/link"
 
 interface LobbyProps {
   roomCode: string
@@ -13,12 +14,48 @@ interface LobbyProps {
 }
 
 export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
-  const [username, setUsername] = useState("")
   const [isJoining, setIsJoining] = useState(false)
   const [players, setPlayers] = useState<User[]>([])
   const [error, setError] = useState("")
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
   const router = useRouter()
   const supabase = getSupabase()
+
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const userId = localStorage.getItem("userId")
+      
+      if (!userId) {
+        // If no user id in localStorage, redirect to login
+        router.push(`/login?returnTo=/game/${roomCode}`)
+        return
+      }
+      
+      // Get current user data
+      try {
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .eq("id", userId)
+          .single()
+          
+        if (userError || !userData) {
+          // User not found, clear localStorage and redirect
+          localStorage.removeItem("userId")
+          localStorage.removeItem("playerNumber")
+          router.push(`/login?returnTo=/game/${roomCode}`)
+          return
+        }
+        
+        setCurrentUser(userData)
+      } catch (err) {
+        console.error("Error checking auth:", err)
+      }
+    }
+    
+    checkAuth()
+  }, [roomCode, router, supabase])
 
   useEffect(() => {
     // Subscribe to player changes in this room
@@ -43,7 +80,7 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
 
         // If we have 2 players, the game can start
         if (userData && userData.length === 2) {
-          onGameStart()
+          onGameStart(); // Trigger game start when both players are present
         }
       }
     }
@@ -62,7 +99,7 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
           filter: `room_id=eq.${roomCode}`,
         },
         (payload) => {
-          fetchPlayers()
+          fetchPlayers(); // Fetch players on new player addition
         },
       )
       .subscribe()
@@ -70,11 +107,11 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [roomCode, onGameStart])
+  }, [roomCode, onGameStart, supabase])
 
   const handleJoin = async () => {
-    if (!username.trim()) {
-      setError("Please enter a username")
+    if (!currentUser) {
+      router.push(`/login?returnTo=/game/${roomCode}`)
       return
     }
 
@@ -112,12 +149,11 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
         setIsJoining(false)
         return
       }
-
-      // Create user
-      const { data: userData, error: userError } = await supabase.from("users").insert([{ username }]).select().single()
-
-      if (userError || !userData) {
-        setError("Error creating user")
+      
+      // Check if user already joined this room
+      const existingPlayer = playersData?.find(player => player.user_id === currentUser.id)
+      if (existingPlayer) {
+        // User already joined, nothing to do
         setIsJoining(false)
         return
       }
@@ -126,7 +162,7 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
       const playerNumber = playersData?.length === 0 ? 1 : 2
       const { error: playerError } = await supabase.from("players").insert([
         {
-          user_id: userData.id,
+          user_id: currentUser.id,
           room_id: roomData.id,
           player_number: playerNumber,
           is_turn: playerNumber === 1, // First player gets first turn
@@ -144,18 +180,27 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
         await supabase.from("game_rooms").update({ status: "active" }).eq("id", roomData.id)
       }
 
-      // Successfully joined
-      localStorage.setItem("userId", userData.id)
+      // Store player number in localStorage
       localStorage.setItem("playerNumber", playerNumber.toString())
-
-      // Refresh players list
-      setPlayers([...players, userData])
     } catch (err) {
       console.error("Error joining room:", err)
       setError("An unexpected error occurred")
     } finally {
       setIsJoining(false)
     }
+  }
+
+  // Automatic join if user is logged in and not joined yet
+  useEffect(() => {
+    if (currentUser && players.length < 2 && !players.some(p => p.id === currentUser.id)) {
+      handleJoin()
+    }
+  }, [currentUser, players])
+
+  const handleLogout = () => {
+    localStorage.removeItem("userId")
+    localStorage.removeItem("playerNumber")
+    router.push(`/login?returnTo=/game/${roomCode}`)
   }
 
   return (
@@ -181,6 +226,7 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
                 <div className={`w-4 h-4 rounded-full mr-3 ${index === 0 ? "bg-teal-500" : "bg-purple-500"}`} />
                 <span className="font-medium">
                   {player.username} (Player {index + 1})
+                  {currentUser?.id === player.id && " (You)"}
                 </span>
               </div>
             ))}
@@ -193,32 +239,22 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
           </div>
         </div>
 
-        {players.length < 2 && !localStorage.getItem("userId") && (
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-amber-700 mb-1">
-                Your Name
-              </label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full"
-              />
-            </div>
-
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-
-            <Button
-              onClick={handleJoin}
-              disabled={isJoining || !username.trim()}
-              className="w-full bg-amber-600 hover:bg-amber-700"
+        {currentUser && (
+          <div className="mb-4 bg-amber-50 p-4 rounded-lg">
+            <p className="text-amber-700 text-center">
+              Logged in as <span className="font-semibold">{currentUser.username}</span>
+            </p>
+            <Button 
+              onClick={handleLogout} 
+              variant="link" 
+              className="text-amber-600 w-full mt-2"
             >
-              {isJoining ? "Joining..." : "Join Game"}
+              Log out
             </Button>
           </div>
         )}
+
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
         {players.length === 2 && (
           <div className="text-center">
