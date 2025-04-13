@@ -51,8 +51,8 @@ Pancha Keliya is a two-player game played on a 96-cell board where:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pancha-keliya.git
-cd pancha-keliya
+git clone https://github.com/dilanka-heshan/pancha-keliya.git
+
 
 # Install dependencies
 npm install
