@@ -105,24 +105,28 @@ export function isValidMove(
   playerNumber: 1 | 2,
 ): boolean {
   // Cannot move completed pieces
-  if (piece.completed) return false
+  if (piece.completed) return false;
 
   // If piece is not on board, check if it can enter
   if (piece.position === -1) {
-    return canEnterBoard(roll)
+    return canEnterBoard(roll);
   }
 
-  const nextPosition = getNextPosition(piece.position, roll, playerNumber)
+  const nextPosition = getNextPosition(piece.position, roll, playerNumber);
 
   // Cannot move if position doesn't change
-  if (nextPosition === piece.position) return false
+  if (nextPosition === piece.position) return false;
 
   // Check if the next position is occupied by another of player's pieces
-  const isOccupiedByPlayer = playerPieces.some((p) => p.id !== piece.id && p.position === nextPosition && !p.completed)
+  const isOccupiedByPlayer = playerPieces.some((p) => p.id !== piece.id && p.position === nextPosition && !p.completed);
+  if (isOccupiedByPlayer) return false;
 
-  if (isOccupiedByPlayer) return false
+  // Check if the next position is a safe square occupied by an opponent
+  const isSafeOccupiedByOpponent = SAFE_SQUARES.includes(nextPosition) &&
+    opponentPieces.some((p) => p.position === nextPosition && !p.completed);
+  if (isSafeOccupiedByOpponent) return false;
 
-  return true
+  return true;
 }
 
 // Check if a piece can knock out an opponent's piece
@@ -134,6 +138,38 @@ export function canKnockOut(position: number, opponentPieces: PiecePosition[]): 
   const opponentPiece = opponentPieces.find((p) => p.position === position && !p.completed)
 
   return opponentPiece ? opponentPiece.id : null
+}
+
+// Move a piece and handle knockouts
+export function movePiece(
+  piece: PiecePosition,
+  roll: number,
+  playerPieces: PiecePosition[],
+  opponentPieces: PiecePosition[],
+  playerNumber: 1 | 2
+): { updatedPiece: PiecePosition; knockedOutPieceId: number | null } {
+  const nextPosition = getNextPosition(piece.position, roll, playerNumber);
+
+  // Check if the move is valid
+  if (nextPosition === piece.position || nextPosition === -1) {
+    return { updatedPiece: piece, knockedOutPieceId: null };
+  }
+
+  // Check for knockouts
+  const knockedOutPieceId = canKnockOut(nextPosition, opponentPieces);
+
+  if (knockedOutPieceId !== null) {
+    // Knock out the opponent's piece
+    const opponentPiece = opponentPieces.find((p) => p.id === knockedOutPieceId);
+    if (opponentPiece) {
+      opponentPiece.position = -1; // Send the opponent's piece back to home
+    }
+  }
+
+  // Update the piece's position
+  piece.position = nextPosition;
+
+  return { updatedPiece: piece, knockedOutPieceId };
 }
 
 // Check if a player has won

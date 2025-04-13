@@ -58,36 +58,46 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
   }, [roomCode, router, supabase])
 
   useEffect(() => {
-    // Subscribe to player changes in this room
     const fetchPlayers = async () => {
-      const { data, error } = await supabase.from("players").select("user_id").eq("room_id", roomCode)
+      const { data: playersData, error } = await supabase
+        .from("players")
+        .select("user_id, player_number")
+        .eq("room_id", roomCode);
 
       if (error) {
-        console.error("Error fetching players:", error)
-        return
+        console.error("Error fetching players:", error);
+        return;
       }
 
-      if (data && data.length > 0) {
-        const userIds = data.map((player) => player.user_id)
-        const { data: userData, error: userError } = await supabase.from("users").select("*").in("id", userIds)
+      if (playersData && playersData.length > 0) {
+        const userIds = playersData.map((player) => player.user_id);
+        const { data: userData, error: userError } = await supabase
+          .from("users")
+          .select("*")
+          .in("id", userIds);
 
         if (userError) {
-          console.error("Error fetching users:", userError)
-          return
+          console.error("Error fetching user details:", userError);
+          return;
         }
 
-        setPlayers(userData || [])
+        const playersWithDetails = playersData.map((player) => ({
+          ...player,
+          username: userData.find((user) => user.id === player.user_id)?.username || "Unknown",
+        }));
+
+        setPlayers(playersWithDetails);
 
         // If we have 2 players, the game can start
-        if (userData && userData.length === 2) {
-          onGameStart(); // Trigger game start when both players are present
+        if (playersWithDetails.length === 2) {
+          onGameStart();
         }
       }
-    }
+    };
 
-    fetchPlayers()
+    fetchPlayers();
 
-    // Set up real-time subscription
+    // Subscribe to player changes in this room
     const subscription = supabase
       .channel(`room:${roomCode}`)
       .on(
@@ -98,15 +108,15 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
           table: "players",
           filter: `room_id=eq.${roomCode}`,
         },
-        (payload) => {
+        () => {
           fetchPlayers(); // Fetch players on new player addition
         },
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      subscription.unsubscribe()
-    }
+      subscription.unsubscribe();
+    };
   }, [roomCode, onGameStart, supabase])
 
   const handleJoin = async () => {
@@ -158,8 +168,10 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
         return
       }
 
+      // Assign player number based on existing players
+      const playerNumber = playersData.length === 0 ? 1 : 2
+
       // Add player to room
-      const playerNumber = playersData?.length === 0 ? 1 : 2
       const { error: playerError } = await supabase.from("players").insert([
         {
           user_id: currentUser.id,
@@ -173,11 +185,6 @@ export default function Lobby({ roomCode, onGameStart }: LobbyProps) {
         setError("Error joining room")
         setIsJoining(false)
         return
-      }
-
-      // If this is the second player, update room status to active
-      if (playerNumber === 2) {
-        await supabase.from("game_rooms").update({ status: "active" }).eq("id", roomData.id)
       }
 
       // Store player number in localStorage

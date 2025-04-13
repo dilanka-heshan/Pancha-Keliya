@@ -1,7 +1,7 @@
 "use client"
 import { useEffect, useState } from "react"
 import type { GameState } from "@/lib/supabase"
-import { SAFE_SQUARES, HOME_POSITION_P1 ,HOME_POSITION_P2 } from "@/lib/game-utils"
+import { SAFE_SQUARES, HOME_POSITION_P1 ,HOME_POSITION_P2, movePiece } from "@/lib/game-utils"
 import Token from "./token"
 import { cn } from "@/lib/utils"
 
@@ -196,7 +196,29 @@ useEffect(() => {
   // Add the missing onTokenClick function
   const onTokenClick = (tokenId: number) => {
     if (isPlayerTurn) {
-      onPieceSelect(tokenId);
+      const playerPieces = currentPlayer === 1 ? gameState.player1_pieces : gameState.player2_pieces;
+      const opponentPieces = currentPlayer === 1 ? gameState.player2_pieces : gameState.player1_pieces;
+  
+      const piece = playerPieces.find((p) => p.id === tokenId);
+      if (!piece) return;
+  
+      const roll = gameState.last_roll;
+      if (roll === null) return;
+  
+      const { updatedPiece, knockedOutPieceId } = movePiece(
+        piece,
+        roll,
+        playerPieces,
+        opponentPieces,
+        currentPlayer
+      );
+  
+      // Update the game state
+      if (knockedOutPieceId !== null) {
+        console.log(`Player ${currentPlayer} knocked out opponent's piece ${knockedOutPieceId}`);
+      }
+  
+      onPieceSelect(updatedPiece.id); // Notify parent component of the move
     }
   }
 

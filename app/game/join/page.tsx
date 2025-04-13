@@ -69,23 +69,23 @@ export default function JoinGame() {
 
     try {
       // Check if room exists
-      const { data, error: roomError } = await supabase
+      const { data: roomData, error: roomError } = await supabase
         .from("game_rooms")
         .select("*")
         .eq("room_code", roomCode.toUpperCase())
         .single()
 
-      if (roomError || !data) {
+      if (roomError || !roomData) {
         setError("Room not found. Please check the code and try again.")
         setIsJoining(false)
         return
       }
 
-      // Check if room is full
+      // Check how many players are in the room
       const { data: playersData, error: playersError } = await supabase
         .from("players")
         .select("*")
-        .eq("room_id", data.id as string)
+        .eq("room_id", roomData.id as string)
 
       if (playersError) {
         setError("Error checking room capacity")
@@ -99,7 +99,51 @@ export default function JoinGame() {
         return
       }
 
-      // Room exists and has space - redirect to the game page
+      // Check if user already joined this room
+      const existingPlayer = playersData?.find((player) => player.user_id === userId)
+      if (existingPlayer) {
+        setError("You have already joined this game")
+        setIsJoining(false)
+        return
+      }
+
+      // Ensure no duplicate user_id for the same player number
+      const duplicatePlayer = playersData.find(
+        (player) => player.player_number === (playersData.length === 0 ? 1 : 2) && player.user_id !== userId
+      )
+      if (duplicatePlayer) {
+        setError("Another user is already assigned to this player slot")
+        setIsJoining(false)
+        return
+      }
+
+      // Assign player number based on existing players
+      let playerNumber: 1 | 2
+      const player1Exists = playersData.some((player) => player.player_number === 1)
+      playerNumber = player1Exists ? 2 : 1
+      
+      console.log("Assigning player number:", playerNumber, "Player 1 exists:", player1Exists)
+
+      // Add player to the room
+      const { error: playerError } = await supabase.from("players").insert([
+        {
+          user_id: userId,
+          room_id: roomData.id,
+          player_number: playerNumber,
+          is_turn: playerNumber === 1, // First player gets the first turn
+        },
+      ])
+
+      if (playerError) {
+        setError("Error joining room")
+        setIsJoining(false)
+        return
+      }
+
+      // Store player number in localStorage
+      localStorage.setItem("playerNumber", playerNumber.toString())
+
+      // Redirect to the game page
       router.push(`/game/${roomCode.toUpperCase()}`)
     } catch (err) {
       console.error("Error joining game:", err)
